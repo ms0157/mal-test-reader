@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="he">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>הקראה מבוחן נייטראלי</title>
+    <!-- טעינת Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'primary-purple': '#7f5cf7', // סגול ראשי חדש
+                        'light-pink': '#fcc3c3',
+                        'soft-gray': '#f8f9fa',
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'Arial', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght100..900&display=swap');
+        body {
+            direction: rtl; /* כיווניות מימין לשמאל עבור עברית */
+            font-family: 'Inter', sans-serif;
+            background-color: #e9ecef;
+        }
+        /* סגנון ל-textarea */
+        textarea {
+            resize: none;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.06);
+        }
+        /* סגנון לכפתור */
+        button, #downloadButton {
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        button:hover:not(:disabled) {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 8px -2px rgba(0, 0, 0, 0.15);
+        }
+        button:disabled {
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+        .container-card {
+            max-width: 600px;
+        }
+        /* סגנון מותאם לכפתורי רדיו */
+        .form-radio:checked {
+            background-image: url("data:image/svg+xml,%3csvg viewBox='0 0 16 16' fill='white' xmlns='http://www.w3.org/2000/svg'%3e%3ccircle cx='8' cy='8' r='3'/%3e%3c/svg%3e");
+            border-color: #7f5cf7;
+            background-color: #7f5cf7;
+        }
+        .form-radio {
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+            border-radius: 50%;
+            border-width: 1px;
+            border-color: #d1d5db;
+            color: #7f5cf7;
+            background-color: #ffffff;
+            cursor: pointer;
+        }
+        /* סגנון לכפתורי שליטה (Pause/Resume) */
+        .control-button {
+            padding-top: 0.5rem;
+            padding-bottom: 0.5rem;
+            font-weight: 600;
+            border-radius: 0.5rem;
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+            transition: all 0.2s ease;
+        }
+        .control-button:hover:not(:disabled) {
+            background-color: #4b5563; /* Gray-700 */
+        }
+        .control-button:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+<body class="p-4 flex items-center justify-center min-h-screen">
+
+    <div id="app" class="container-card w-full bg-white p-6 md:p-8 rounded-xl shadow-2xl">
+        <h1 class="text-3xl font-extrabold text-center mb-6 text-primary-purple">
+            הקראה מבוחן נייטראלי
+        </h1>
+        <p class="text-center text-gray-600 mb-4">
+            הזן/י טקסט בעברית ובחר/י את המקריא/ה לקבלת קול ברור ונייטראלי.
+        </p>
+
+        <!-- בחירת קול -->
+        <div class="mb-6 flex justify-center space-x-6 space-x-reverse p-2 bg-soft-gray rounded-lg">
+            <label class="inline-flex items-center text-lg font-medium">
+                <input type="radio" name="voice" value="Vindemiatrix" checked 
+                       class="form-radio h-5 w-5 transition duration-150 ease-in-out border-gray-400">
+                <span class="ml-2 mr-2 text-gray-700">אישה</span>
+            </label>
+            <label class="inline-flex items-center text-lg font-medium">
+                <input type="radio" name="voice" value="Fenrir" 
+                       class="form-radio h-5 w-5 transition duration-150 ease-in-out border-gray-400">
+                <span class="ml-2 mr-2 text-gray-700">גבר</span>
+            </label>
+        </div>
+        
+        <!-- קלט טקסט -->
+        <textarea id="textInput" rows="6" placeholder="הזן/י את הטקסט שלך כאן..."
+                  class="w-full p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-purple/50 focus:border-primary-purple text-lg"
+                  maxlength="500"></textarea>
+        <p class="text-sm text-gray-500 mt-1 text-left" id="charCount">0/500 תווים</p>
+
+        <!-- כפתור הקראה -->
+        <button id="readButton"
+                class="w-full mt-4 py-3 bg-primary-purple text-white font-semibold rounded-lg hover:bg-primary-purple/90 disabled:bg-gray-400 flex items-center justify-center">
+            <svg id="buttonIcon" class="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a.5.5 0 00-.272-.34l-5.656-3.35A.5.5 0 009 5v14a.5.5 0 00.272.434l5.656-3.35a.5.5 0 00.272-.434V8.464z"></path>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5"></path>
+            </svg>
+            <span id="buttonText">הקרא טקסט</span>
+        </button>
+
+        <!-- סטטוס והודעות -->
+        <div id="statusMessage" class="mt-4 p-3 rounded-lg text-center font-medium hidden"></div>
+
+        <!-- נגן אודיו (מוסתר עד ליצירת האודיו) -->
+        <audio id="audioPlayer" controls class="w-full mt-6 rounded-lg hidden"></audio>
+
+        <!-- כפתורי שליטה -->
+        <div id="controlButtons" class="mt-4 flex justify-between space-x-2 space-x-reverse hidden">
+            <button id="pauseButton" disabled
+                    class="w-1/2 control-button bg-gray-600 text-white hover:bg-gray-700 flex items-center justify-center">
+                <svg class="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 16v-8M14 16v-8"></path>
+                </svg>
+                <span>השהה</span>
+            </button>
+            <button id="resumeButton" disabled
+                    class="w-1/2 control-button bg-gray-600 text-white hover:bg-gray-700 flex items-center justify-center">
+                <svg class="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197 2.132A1 1 0 0110 13.201V8.799a1 1 110-1.732l3.197-2.132a1 1 0 011.599.84V12.008a1 1 0 01-.847.84z"></path>
+                </svg>
+                <span>המשך</span>
+            </button>
+        </div>
+
+        <!-- כפתור הורדה -->
+        <a id="downloadButton" href="#" download="tts_audio.wav"
+           class="w-full mt-2 py-3 bg-gray-500 text-white font-semibold rounded-lg hover:bg-gray-600 flex items-center justify-center hidden"
+           role="button">
+            <svg class="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+            </svg>
+            <span>הורד קובץ (WAV)</span>
+        </a>
+
+    </div>
+
+    <script type="module">
+        // פונקציות עזר להמרת PCM ל-WAV
+        const base64ToArrayBuffer = (base64) => {
+            const binaryString = atob(base64);
+            const len = binaryString.length;
+            const bytes = new Uint8Array(len);
+            for (let i = 0; i < len; i++) {
+                bytes[i] = binaryString.charCodeAt(i);
+            }
+            return bytes.buffer;
+        };
+
+        const pcmToWav = (pcm16, sampleRate = 24000) => {
+            const numChannels = 1;
+            const bytesPerSample = 2; // Int16
+            const blockAlign = numChannels * bytesPerSample;
+            const byteRate = sampleRate * blockAlign;
+            const dataLength = pcm16.length * bytesPerSample;
+            const buffer = new ArrayBuffer(44 + dataLength);
+            const view = new DataView(buffer);
+
+            let offset = 0;
+
+            // RIFF chunk
+            writeString('RIFF'); offset += 4;
+            view.setUint32(offset, 36 + dataLength, true); offset += 4;
+            writeString('WAVE'); offset += 4;
+
+            // fmt chunk
+            writeString('fmt '); offset += 4;
+            view.setUint32(offset, 16, true); offset += 4; // Sub-chunk size
+            view.setUint16(offset, 1, true); offset += 2; // Audio format (1 = PCM)
+            view.setUint16(offset, numChannels, true); offset += 2;
+            view.setUint32(offset, sampleRate, true); offset += 4;
+            view.setUint32(offset, byteRate, true); offset += 4;
+            view.setUint16(offset, blockAlign, true); offset += 2;
+            view.setUint16(offset, bytesPerSample * 8, true); offset += 2; // Bits per sample (16)
+
+            // data chunk
+            writeString('data'); offset += 4;
+            view.setUint32(offset, dataLength, true); offset += 4;
+
+            // Write PCM data
+            pcm16.forEach(sample => {
+                view.setInt16(offset, sample, true);
+                offset += 2;
+            });
+
+            return new Blob([view], { type: 'audio/wav' });
+
+            function writeString(s) {
+                for (let i = 0; i < s.length; i++) {
+                    view.setUint8(offset + i, s.charCodeAt(i));
+                }
+            }
+        };
+
+        // הגדרת משתני UI
+        const textInput = document.getElementById('textInput');
+        const readButton = document.getElementById('readButton');
+        const audioPlayer = document.getElementById('audioPlayer');
+        const statusMessage = document.getElementById('statusMessage');
+        const buttonText = document.getElementById('buttonText');
+        const buttonIcon = document.getElementById('buttonIcon');
+        const charCount = document.getElementById('charCount');
+        const downloadButton = document.getElementById('downloadButton');
+        const controlButtons = document.getElementById('controlButtons');
+        const pauseButton = document.getElementById('pauseButton');
+        const resumeButton = document.getElementById('resumeButton');
+
+        // פונקציה לקריאת הקול הנבחר
+        const getSelectedVoice = () => {
+            const selectedRadio = document.querySelector('input[name="voice"]:checked');
+            return selectedRadio ? selectedRadio.value : 'Vindemiatrix'; // ברירת מחדל לאישה
+        };
+
+        // הגדרות API
+        const apiKey = "AIzaSyDhJqYtm0tkW-vy7JuTm200UpuOw3dijRg"; // API key יינתן על ידי הסביבה
+        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=${apiKey}`;
+        const maxRetries = 5;
+        const initialDelay = 1000; // 1 second
+
+        // פונקציות עזר לניהול UI
+        const setLoading = (isLoading) => {
+            readButton.disabled = isLoading;
+            textInput.disabled = isLoading;
+            // הופך את כפתורי בחירת הקול ללא זמינים בזמן הטעינה
+            document.querySelectorAll('input[name="voice"]').forEach(radio => radio.disabled = isLoading); 
+
+            if (isLoading) {
+                buttonText.textContent = 'מייצר אודיו...';
+                buttonIcon.classList.add('animate-spin');
+                buttonIcon.innerHTML = `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2h-4.357"></path></svg>`;
+                statusMessage.classList.add('bg-blue-100', 'text-blue-800');
+                statusMessage.classList.remove('bg-red-100', 'text-red-800', 'hidden', 'bg-green-100', 'text-green-800');
+                statusMessage.textContent = 'מתחבר למערכת הקול... אנא המתן/י.';
+                downloadButton.classList.add('hidden'); // הסתר כפתור הורדה
+                controlButtons.classList.add('hidden'); // הסתר כפתורי שליטה
+            } else {
+                buttonText.textContent = 'הקרא טקסט';
+                buttonIcon.classList.remove('animate-spin');
+                buttonIcon.innerHTML = `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a.5.5 0 00-.272-.34l-5.656-3.35A.5.5 0 009 5v14a.5.5 0 00.272.434l5.656-3.35a.5.5 0 00.272-.434V8.464z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5"></path>`;
+                statusMessage.classList.remove('bg-blue-100', 'text-blue-800', 'bg-red-100', 'text-red-800');
+                
+                // אם אין הודעת הצלחה, נסתיר את הסטטוס
+                if (!statusMessage.classList.contains('bg-green-100')) {
+                    statusMessage.classList.add('hidden');
+                }
+            }
+        };
+
+        const updateControlButtons = () => {
+             // הפעלת/כיבוי כפתורי Pause/Resume בהתאם למצב הנגן
+            if (!audioPlayer.paused && !audioPlayer.ended) {
+                pauseButton.disabled = false;
+                resumeButton.disabled = true;
+            } else if (audioPlayer.paused && !audioPlayer.ended) {
+                pauseButton.disabled = true;
+                resumeButton.disabled = false;
+            } else {
+                pauseButton.disabled = true;
+                resumeButton.disabled = true;
+            }
+        };
+
+        const displayError = (message) => {
+            statusMessage.classList.remove('bg-blue-100', 'text-blue-800', 'hidden', 'bg-green-100', 'text-green-800');
+            statusMessage.classList.add('bg-red-100', 'text-red-800');
+            statusMessage.textContent = `שגיאה: ${message}`;
+            audioPlayer.classList.add('hidden');
+            downloadButton.classList.add('hidden'); // הסתר כפתור הורדה
+            controlButtons.classList.add('hidden'); // הסתר כפתורי שליטה
+        };
+
+        const updateCharCount = () => {
+            const count = textInput.value.length;
+            charCount.textContent = `${count}/500 תווים`;
+        };
+        
+        // פונקציה ראשית להמרת טקסט לדיבור
+        async function textToSpeech() {
+            const text = textInput.value.trim();
+            if (text.length === 0) {
+                displayError('אנא הזן/י טקסט להקראה.');
+                return;
+            }
+            if (text.length > 500) {
+                displayError('הטקסט ארוך מדי. אנא הזן/י עד 500 תווים.');
+                return;
+            }
+
+            setLoading(true);
+            audioPlayer.classList.add('hidden');
+            audioPlayer.src = '';
+            controlButtons.classList.add('hidden');
+            
+            const voiceName = getSelectedVoice();
+
+            // הנחיית המודל לקרוא בטון ברור ונייטראלי (מתאים יותר לבוחן)
+            const systemInstruction = `Read the following text in a clear, neutral and professional tone in Hebrew: ${text}`;
+
+            const payload = {
+                contents: [{
+                    parts: [{ text: systemInstruction }]
+                }],
+                generationConfig: {
+                    responseModalities: ["AUDIO"],
+                    speechConfig: {
+                        // שימוש בקול הנבחר
+                        voiceConfig: {
+                            prebuiltVoiceConfig: { voiceName: voiceName }
+                        }
+                    }
+                },
+                model: "gemini-2.5-flash-preview-tts"
+            };
+
+            for (let i = 0; i < maxRetries; i++) {
+                try {
+                    // --- לוגים לאבחון שגיאות API ---
+                    console.log(`--- TTS API Call Attempt ${i + 1} of ${maxRetries} ---`);
+                    console.log('Selected Voice:', voiceName);
+
+                    const response = await fetch(apiUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                    
+                    console.log('API Response Status:', response.status); 
+
+                    if (!response.ok) {
+                        const errorData = await response.json();
+                        const errorMessage = errorData.error?.message || 'שגיאה לא ידועה בהתחברות ל-API. (ייתכן קשר למפתח או הרשאות)';
+                        throw new Error(`שגיאת HTTP: ${response.status}. הודעה: ${errorMessage}`);
+                    }
+
+                    const result = await response.json();
+                    const part = result?.candidates?.[0]?.content?.parts?.[0];
+                    const audioData = part?.inlineData?.data;
+                    const mimeType = part?.inlineData?.mimeType;
+
+                    if (!audioData || !mimeType || !mimeType.startsWith("audio/L16")) {
+                        throw new Error('לא התקבלו נתוני אודיו תקינים. ייתכן שהמודל לא הצליח להפיק אודיו מהטקסט.');
+                    }
+
+                    // חילוץ קצב הדגימה מה-mimeType
+                    const rateMatch = mimeType.match(/rate=(\d+)/);
+                    const sampleRate = rateMatch ? parseInt(rateMatch[1], 10) : 24000; // ברירת מחדל: 24000
+
+                    // המרה מ-base64 ל-ArrayBuffer
+                    const pcmDataBuffer = base64ToArrayBuffer(audioData);
+                    // ה-API מחזיר נתוני PCM חתומים 16bit
+                    const pcm16 = new Int16Array(pcmDataBuffer);
+
+                    // המרה מ-PCM ל-WAV Blob
+                    const wavBlob = pcmToWav(pcm16, sampleRate);
+                    
+                    // יצירת URL ונגינה
+                    const audioUrl = URL.createObjectURL(wavBlob);
+                    audioPlayer.src = audioUrl;
+                    audioPlayer.classList.remove('hidden');
+                    controlButtons.classList.remove('hidden'); // הצגת כפתורי שליטה
+                    updateControlButtons(); // עדכון מצב כפתורי השליטה
+
+                    // --- לוגיקת הורדה ושינוי שם הקובץ ---
+                    const downloadUrl = URL.createObjectURL(wavBlob);
+                    
+                    // יצירת שם קובץ דינמי: קח עד 20 תווים ראשונים, החלף רווחים בקו תחתון, ונקה תווים לא חוקיים
+                    let fileName = text.substring(0, 20).trim();
+                    fileName = fileName.replace(/\s+/g, '_');
+                    // הסרת תווים לא חוקיים (שומר על עברית, לטינית, מספרים וקו תחתון)
+                    fileName = fileName.replace(/[^a-zA-Z0-9\u0590-\u05FF_]+/g, ''); 
+                    
+                    if (fileName.length === 0) {
+                        fileName = 'tts_audio';
+                    }
+                    
+                    const finalFileName = fileName + '.wav';
+
+                    downloadButton.href = downloadUrl;
+                    downloadButton.download = finalFileName; // קביעת שם הקובץ לשמירה
+                    downloadButton.classList.remove('hidden');
+                    // ---------------------
+                    
+                    statusMessage.classList.add('bg-green-100', 'text-green-800');
+                    statusMessage.classList.remove('bg-blue-100', 'text-blue-800', 'bg-red-100', 'text-red-800', 'hidden');
+                    statusMessage.textContent = 'ההקראה מוכנה! לחץ/י Play או הורד/י את הקובץ.';
+
+                    setLoading(false);
+                    return; // הצלחה
+                } catch (error) {
+                    // נדפיס את השגיאה רק אם זה לא ניסיון אחרון כדי לא להציף את הקונסול
+                    if (i === maxRetries - 1) {
+                         console.error('שגיאה ב-TTS (ניסיון אחרון נכשל):', error.message);
+                    }
+                    
+                    if (i < maxRetries - 1) {
+                        const delay = initialDelay * Math.pow(2, i);
+                        await new Promise(resolve => setTimeout(resolve, delay));
+                    } else {
+                        displayError(`שגיאה בהפקת האודיו: ${error.message}. אנא בדוק/י את קונסול המפתחים (F12) לפרטים נוספים.`);
+                        setLoading(false);
+                        return; // כישלון סופי
+                    }
+                }
+            }
+        }
+        
+        // --- פונקציות שליטה חדשות ---
+        const handlePause = () => {
+            audioPlayer.pause();
+            updateControlButtons();
+        };
+
+        const handleResume = () => {
+            audioPlayer.play();
+            updateControlButtons();
+        };
+        // ------------------------------
+
+
+        // איתחול מאזינים
+        document.addEventListener('DOMContentLoaded', () => {
+            textInput.addEventListener('input', updateCharCount);
+            readButton.addEventListener('click', textToSpeech);
+            pauseButton.addEventListener('click', handlePause);
+            resumeButton.addEventListener('click', handleResume);
+            
+            // מאזינים לאירועי נגן האודיו כדי לעדכן את כפתורי השליטה
+            audioPlayer.addEventListener('play', updateControlButtons);
+            audioPlayer.addEventListener('pause', updateControlButtons);
+            audioPlayer.addEventListener('ended', updateControlButtons);
+
+            updateCharCount();
+        });
+    </script>
+</body>
+</html>
