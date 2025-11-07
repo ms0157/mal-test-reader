@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>הקראה מבוחן נייטראלי</title>
+    <title>הקראה על ידי בוחן נייטראלי</title>
     <!-- טעינת Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -68,29 +68,13 @@
             background-color: #ffffff;
             cursor: pointer;
         }
-        /* סגנון לכפתורי שליטה (Pause/Resume) */
-        .control-button {
-            padding-top: 0.5rem;
-            padding-bottom: 0.5rem;
-            font-weight: 600;
-            border-radius: 0.5rem;
-            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
-            transition: all 0.2s ease;
-        }
-        .control-button:hover:not(:disabled) {
-            background-color: #4b5563; /* Gray-700 */
-        }
-        .control-button:disabled {
-            opacity: 0.4;
-            cursor: not-allowed;
-        }
     </style>
 </head>
 <body class="p-4 flex items-center justify-center min-h-screen">
 
     <div id="app" class="container-card w-full bg-white p-6 md:p-8 rounded-xl shadow-2xl">
         <h1 class="text-3xl font-extrabold text-center mb-6 text-primary-purple">
-            הקראה מבוחן נייטראלי
+            הקראה על ידי בוחן נייטראלי
         </h1>
         <p class="text-center text-gray-600 mb-4">
             הזן/י טקסט בעברית ובחר/י את המקריא/ה לקבלת קול ברור ונייטראלי.
@@ -131,24 +115,6 @@
 
         <!-- נגן אודיו (מוסתר עד ליצירת האודיו) -->
         <audio id="audioPlayer" controls class="w-full mt-6 rounded-lg hidden"></audio>
-
-        <!-- כפתורי שליטה -->
-        <div id="controlButtons" class="mt-4 flex justify-between space-x-2 space-x-reverse hidden">
-            <button id="pauseButton" disabled
-                    class="w-1/2 control-button bg-gray-600 text-white hover:bg-gray-700 flex items-center justify-center">
-                <svg class="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 16v-8M14 16v-8"></path>
-                </svg>
-                <span>השהה</span>
-            </button>
-            <button id="resumeButton" disabled
-                    class="w-1/2 control-button bg-gray-600 text-white hover:bg-gray-700 flex items-center justify-center">
-                <svg class="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197 2.132A1 1 0 0110 13.201V8.799a1 1 110-1.732l3.197-2.132a1 1 0 011.599.84V12.008a1 1 0 01-.847.84z"></path>
-                </svg>
-                <span>המשך</span>
-            </button>
-        </div>
 
         <!-- כפתור הורדה -->
         <a id="downloadButton" href="#" download="tts_audio.wav"
@@ -228,10 +194,7 @@
         const buttonIcon = document.getElementById('buttonIcon');
         const charCount = document.getElementById('charCount');
         const downloadButton = document.getElementById('downloadButton');
-        const controlButtons = document.getElementById('controlButtons');
-        const pauseButton = document.getElementById('pauseButton');
-        const resumeButton = document.getElementById('resumeButton');
-
+        
         // פונקציה לקריאת הקול הנבחר
         const getSelectedVoice = () => {
             const selectedRadio = document.querySelector('input[name="voice"]:checked');
@@ -259,7 +222,6 @@
                 statusMessage.classList.remove('bg-red-100', 'text-red-800', 'hidden', 'bg-green-100', 'text-green-800');
                 statusMessage.textContent = 'מתחבר למערכת הקול... אנא המתן/י.';
                 downloadButton.classList.add('hidden'); // הסתר כפתור הורדה
-                controlButtons.classList.add('hidden'); // הסתר כפתורי שליטה
             } else {
                 buttonText.textContent = 'הקרא טקסט';
                 buttonIcon.classList.remove('animate-spin');
@@ -273,27 +235,12 @@
             }
         };
 
-        const updateControlButtons = () => {
-             // הפעלת/כיבוי כפתורי Pause/Resume בהתאם למצב הנגן
-            if (!audioPlayer.paused && !audioPlayer.ended) {
-                pauseButton.disabled = false;
-                resumeButton.disabled = true;
-            } else if (audioPlayer.paused && !audioPlayer.ended) {
-                pauseButton.disabled = true;
-                resumeButton.disabled = false;
-            } else {
-                pauseButton.disabled = true;
-                resumeButton.disabled = true;
-            }
-        };
-
         const displayError = (message) => {
             statusMessage.classList.remove('bg-blue-100', 'text-blue-800', 'hidden', 'bg-green-100', 'text-green-800');
             statusMessage.classList.add('bg-red-100', 'text-red-800');
             statusMessage.textContent = `שגיאה: ${message}`;
             audioPlayer.classList.add('hidden');
             downloadButton.classList.add('hidden'); // הסתר כפתור הורדה
-            controlButtons.classList.add('hidden'); // הסתר כפתורי שליטה
         };
 
         const updateCharCount = () => {
@@ -316,7 +263,6 @@
             setLoading(true);
             audioPlayer.classList.add('hidden');
             audioPlayer.src = '';
-            controlButtons.classList.add('hidden');
             
             const voiceName = getSelectedVoice();
 
@@ -384,8 +330,6 @@
                     const audioUrl = URL.createObjectURL(wavBlob);
                     audioPlayer.src = audioUrl;
                     audioPlayer.classList.remove('hidden');
-                    controlButtons.classList.remove('hidden'); // הצגת כפתורי שליטה
-                    updateControlButtons(); // עדכון מצב כפתורי השליטה
 
                     // --- לוגיקת הורדה ושינוי שם הקובץ ---
                     const downloadUrl = URL.createObjectURL(wavBlob);
@@ -430,32 +374,11 @@
                 }
             }
         }
-        
-        // --- פונקציות שליטה חדשות ---
-        const handlePause = () => {
-            audioPlayer.pause();
-            updateControlButtons();
-        };
-
-        const handleResume = () => {
-            audioPlayer.play();
-            updateControlButtons();
-        };
-        // ------------------------------
-
 
         // איתחול מאזינים
         document.addEventListener('DOMContentLoaded', () => {
             textInput.addEventListener('input', updateCharCount);
             readButton.addEventListener('click', textToSpeech);
-            pauseButton.addEventListener('click', handlePause);
-            resumeButton.addEventListener('click', handleResume);
-            
-            // מאזינים לאירועי נגן האודיו כדי לעדכן את כפתורי השליטה
-            audioPlayer.addEventListener('play', updateControlButtons);
-            audioPlayer.addEventListener('pause', updateControlButtons);
-            audioPlayer.addEventListener('ended', updateControlButtons);
-
             updateCharCount();
         });
     </script>
