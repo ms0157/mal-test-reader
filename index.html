@@ -29,7 +29,7 @@
         body {
             direction: rtl; /* כיווניות מימין לשמאל עבור עברית */
             font-family: 'Inter', sans-serif;
-            background-color: #e9ecef;
+            background-color: #f7f9fd; /* רקע בהיר ונעים יותר */
         }
         /* סגנון ל-textarea */
         textarea {
@@ -70,16 +70,33 @@
             background-color: #ffffff;
             cursor: pointer;
         }
+
+        /* סגנון למדריך ניקוד */
+        #nikkudContent {
+            transition: max-height 0.3s ease-out, opacity 0.3s ease-out;
+            max-height: 0;
+            opacity: 0;
+            overflow: hidden;
+        }
+        #nikkudContent.active {
+            max-height: 500px; /* גובה מספיק גדול */
+            opacity: 1;
+        }
     </style>
 </head>
 <body class="p-4 flex items-center justify-center min-h-screen">
 
     <div id="app" class="container-card w-full bg-white p-6 md:p-8 rounded-xl shadow-2xl">
-        <h1 class="text-3xl font-extrabold text-center mb-6 text-primary-purple">
+        <!-- כותרת ראשית עם אייקון ליצירת אווירה מזמינה -->
+        <h1 class="text-3xl font-extrabold text-center mb-6 text-primary-purple flex items-center justify-center">
+            <!-- אייקון בועת שיחה לשיפור העיצוב (מייצג קול ודיבור) -->
+            <svg class="w-8 h-8 ml-2 text-primary-purple/80" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8h10M7 12h10m-7 4h4M4 16h4l3 3v-3h4l-3-3H4zm16 0h-4l-3-3v3h4l3 3v-3z"></path>
+            </svg>
             הקראה על ידי בוחן נייטראלי
         </h1>
         <p class="text-center text-gray-600 mb-4">
-            הזן/י טקסט בעברית או יבא/י קובץ. לאחר מכן, בחר/י את המקריא/ה לקבלת קול ברור ונייטראלי.
+            הזן/י טקסט בעברית או יבא/י קובץ. לדיוק מרבי בהגייה, מומלץ להוסיף ניקוד. לאחר מכן, בחר/י את המקריא/ה לקבלת קול ברור ונייטראלי.
         </p>
 
         <!-- בחירת קול -->
@@ -108,12 +125,43 @@
                 file:bg-primary-purple/10 file:text-primary-purple
                 hover:file:bg-primary-purple/20"/>
         </div>
+
+        <!-- קישור לנקדן אוטומטי - טקסט מעודכן -->
+        <div class="text-right mb-3 -mt-3">
+            <a href="https://nakdan.dicta.org.il/" target="_blank" class="font-bold text-sm text-primary-purple hover:underline transition duration-150 whitespace-nowrap">
+                <!-- טקסט מעודכן: מדגיש את המטרה של שיפור הקריאה בעברית -->
+                (לדיוק מירבי: פתח/י נקדן אוטומטי לשיפור הקריאה בעברית)
+            </a>
+        </div>
         
         <!-- קלט טקסט -->
         <textarea id="textInput" rows="6" placeholder="...או הזן/י את הטקסט שלך כאן"
                   class="w-full p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-purple/50 focus:border-primary-purple text-lg"
                   maxlength="1000"></textarea>
         <p class="text-sm text-gray-500 mt-1 text-left" id="charCount">0/1000 תווים</p>
+
+        <!-- מדריך ניקוד מתקפל -->
+        <div class="mb-2">
+            <button id="toggleNikkudButton" class="text-sm w-full flex justify-between items-center text-gray-500 hover:text-primary-purple transition duration-150 focus:outline-none py-1"> <!-- טקסט קטן ועדין יותר -->
+                <span>קיצורי מקלדת לניקוד ידני (PC) - לחץ/י להצגה/הסתרה</span>
+                <span id="nikkudChevron" class="transform transition-transform duration-300">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                </span>
+            </button>
+            <div id="nikkudContent" class="pt-1">
+                <p class="text-xs mb-1 text-gray-600">השתמש/י בצירוף <strong class="text-primary-purple">Shift + [מקש]</strong> לאחר הקלדת האות:</p>
+                <!-- הוספת רקע עדין לתוכן הניקוד עצמו כשהוא פתוח, לשמירה על ניקיון -->
+                <div class="grid grid-cols-2 text-xs gap-y-0 gap-x-2 text-right p-2 bg-soft-gray rounded-md">
+                    <span class="font-semibold text-gray-700">קמץ (ָ):</span><span class="font-mono">Shift + 0</span>
+                    <span class="font-semibold text-gray-700">פתח (ַ):</span><span class="font-mono">Shift + 1</span>
+                    <span class="font-semibold text-gray-700">צירה (ֵ):</span><span class="font-mono">Shift + 2</span>
+                    <span class="font-semibold text-gray-700">חיריק (ִ):</span><span class="font-mono">Shift + 3</span>
+                    <span class="font-semibold text-gray-700">חולם (ֹ):</span><span class="font-mono">Shift + 4</span>
+                    <span class="font-semibold text-gray-700">שווּא (ְ):</span><span class="font-mono">Shift + 5</span>
+                    <span class="font-semibold text-gray-700">דגש/מפיק (ּ):</span><span class="font-mono">Shift + ~</span>
+                </div>
+            </div>
+        </div>
 
         <!-- כפתור הקראה -->
         <button id="readButton"
@@ -213,6 +261,10 @@
         const charCount = document.getElementById('charCount');
         const downloadButton = document.getElementById('downloadButton');
         const fileInput = document.getElementById('fileInput'); // מזהה חדש לקלט קובץ
+        
+        const toggleNikkudButton = document.getElementById('toggleNikkudButton');
+        const nikkudContent = document.getElementById('nikkudContent');
+        const nikkudChevron = document.getElementById('nikkudChevron');
         
         // פונקציה לקריאת הקול הנבחר
         const getSelectedVoice = () => {
@@ -339,6 +391,7 @@
             const voiceName = getSelectedVoice();
 
             // הנחיית המודל לקרוא בטון ברור ונייטראלי (מתאים יותר לבוחן)
+            // המודל תומך בטקסט עם ניקוד ואף מעדיף אותו לדיוק
             const systemInstruction = `Read the following text in a clear, neutral and professional tone in Hebrew: ${text}`;
 
             const payload = {
@@ -447,12 +500,29 @@
             }
         }
 
+        // --- לוגיקת מדריך ניקוד ---
+        const toggleNikkudGuide = () => {
+            const isVisible = nikkudContent.classList.contains('active');
+            if (isVisible) {
+                nikkudContent.classList.remove('active');
+                nikkudChevron.classList.remove('rotate-180');
+            } else {
+                nikkudContent.classList.add('active');
+                nikkudChevron.classList.add('rotate-180');
+            }
+        };
+
         // איתחול מאזינים
         document.addEventListener('DOMContentLoaded', () => {
             textInput.addEventListener('input', updateCharCount);
             readButton.addEventListener('click', textToSpeech);
             fileInput.addEventListener('change', handleFileUpload); // מאזין חדש לטעינת קובץ
+            toggleNikkudButton.addEventListener('click', toggleNikkudGuide); // מאזין חדש למדריך הניקוד
             updateCharCount();
+            
+            // הגדרה ראשונית: הסתרת המדריך בהתחלה
+            nikkudContent.classList.remove('active'); 
+            nikkudChevron.classList.remove('rotate-180');
         });
     </script>
 </body>
