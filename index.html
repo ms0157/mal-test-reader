@@ -6,6 +6,8 @@
     <title>הקראה על ידי בוחן נייטראלי</title>
     <!-- טעינת Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- CDN עבור mammoth.js לקריאת קבצי DOCX -->
+    <script src="https://cdn.jsdelivr.net/npm/mammoth@1.6.0/mammoth.browser.min.js"></script>
     <script>
         tailwind.config = {
             theme: {
@@ -77,7 +79,7 @@
             הקראה על ידי בוחן נייטראלי
         </h1>
         <p class="text-center text-gray-600 mb-4">
-            הזן/י טקסט בעברית ובחר/י את המקריא/ה לקבלת קול ברור ונייטראלי.
+            הזן/י טקסט בעברית או יבא/י קובץ. לאחר מכן, בחר/י את המקריא/ה לקבלת קול ברור ונייטראלי.
         </p>
 
         <!-- בחירת קול -->
@@ -93,12 +95,25 @@
                 <span class="ml-2 mr-2 text-gray-700">גבר</span>
             </label>
         </div>
+
+        <!-- קלט קובץ -->
+        <div class="mt-4 mb-6">
+            <label for="fileInput" class="block text-right text-gray-700 font-medium mb-2">
+                יבא/י קובץ (.docx או .txt):
+            </label>
+            <input type="file" id="fileInput" accept=".docx, .txt" class="w-full text-sm text-gray-500
+                file:mr-4 file:py-2 file:px-4
+                file:rounded-full file:border-0
+                file:text-sm file:font-semibold
+                file:bg-primary-purple/10 file:text-primary-purple
+                hover:file:bg-primary-purple/20"/>
+        </div>
         
         <!-- קלט טקסט -->
-        <textarea id="textInput" rows="6" placeholder="הזן/י את הטקסט שלך כאן..."
+        <textarea id="textInput" rows="6" placeholder="...או הזן/י את הטקסט שלך כאן"
                   class="w-full p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-purple/50 focus:border-primary-purple text-lg"
-                  maxlength="500"></textarea>
-        <p class="text-sm text-gray-500 mt-1 text-left" id="charCount">0/500 תווים</p>
+                  maxlength="1000"></textarea>
+        <p class="text-sm text-gray-500 mt-1 text-left" id="charCount">0/1000 תווים</p>
 
         <!-- כפתור הקראה -->
         <button id="readButton"
@@ -129,7 +144,7 @@
     </div>
 
     <script type="module">
-        // פונקציות עזר להמרת PCM ל-WAV
+        // --- פונקציות עזר להמרת PCM ל-WAV ---
         const base64ToArrayBuffer = (base64) => {
             const binaryString = atob(base64);
             const len = binaryString.length;
@@ -185,6 +200,9 @@
             }
         };
 
+        // --- הגדרת משתנים וקבועים ---
+        const MAX_CHARS = 1000;
+        
         // הגדרת משתני UI
         const textInput = document.getElementById('textInput');
         const readButton = document.getElementById('readButton');
@@ -194,6 +212,7 @@
         const buttonIcon = document.getElementById('buttonIcon');
         const charCount = document.getElementById('charCount');
         const downloadButton = document.getElementById('downloadButton');
+        const fileInput = document.getElementById('fileInput'); // מזהה חדש לקלט קובץ
         
         // פונקציה לקריאת הקול הנבחר
         const getSelectedVoice = () => {
@@ -207,10 +226,11 @@
         const maxRetries = 5;
         const initialDelay = 1000; // 1 second
 
-        // פונקציות עזר לניהול UI
+        // --- פונקציות עזר לניהול UI ---
         const setLoading = (isLoading) => {
             readButton.disabled = isLoading;
             textInput.disabled = isLoading;
+            fileInput.disabled = isLoading; // הוספת חסימה של קלט הקובץ
             // הופך את כפתורי בחירת הקול ללא זמינים בזמן הטעינה
             document.querySelectorAll('input[name="voice"]').forEach(radio => radio.disabled = isLoading); 
 
@@ -245,18 +265,70 @@
 
         const updateCharCount = () => {
             const count = textInput.value.length;
-            charCount.textContent = `${count}/500 תווים`;
+            charCount.textContent = `${count}/${MAX_CHARS} תווים`;
         };
         
-        // פונקציה ראשית להמרת טקסט לדיבור
+        // --- לוגיקה לייבוא קובץ ---
+        async function handleFileUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            setLoading(true);
+            statusMessage.classList.add('hidden');
+            textInput.value = ''; // נקה טקסט קיים
+
+            try {
+                if (file.size > 2 * 1024 * 1024) { // הגבלת גודל קובץ ל-2MB
+                    throw new Error('הקובץ גדול מדי (מקסימום 2MB).');
+                }
+
+                const fileName = file.name.toLowerCase();
+                let fileContent = '';
+
+                if (fileName.endsWith('.docx')) {
+                    // קריאת DOCX באמצעות mammoth.js
+                    const arrayBuffer = await file.arrayBuffer();
+                    const result = await mammoth.extractRawText({ arrayBuffer: arrayBuffer });
+                    fileContent = result.value;
+                } else if (fileName.endsWith('.txt')) {
+                    // קריאת קובץ TXT רגיל
+                    fileContent = await file.text();
+                } else {
+                    throw new Error('סוג קובץ לא נתמך. אנא השתמש/י ב-.docx או .txt');
+                }
+
+                if (fileContent.length > MAX_CHARS) {
+                    fileContent = fileContent.substring(0, MAX_CHARS);
+                    displayError(`הקובץ נחתך ל-${MAX_CHARS} תווים כדי לעמוד במגבלת המערכת.`);
+                } else if (fileContent.length === 0) {
+                    throw new Error('הקובץ ריק או שלא ניתן היה לחלץ ממנו טקסט.');
+                } else {
+                    statusMessage.classList.add('hidden');
+                }
+
+                textInput.value = fileContent;
+                updateCharCount();
+                setLoading(false);
+
+            } catch (error) {
+                setLoading(false);
+                displayError(`שגיאה בייבוא הקובץ: ${error.message}`);
+                textInput.value = '';
+                updateCharCount();
+                console.error("File upload error:", error);
+            }
+        }
+
+        
+        // --- פונקציה ראשית להמרת טקסט לדיבור ---
         async function textToSpeech() {
             const text = textInput.value.trim();
             if (text.length === 0) {
                 displayError('אנא הזן/י טקסט להקראה.');
                 return;
             }
-            if (text.length > 500) {
-                displayError('הטקסט ארוך מדי. אנא הזן/י עד 500 תווים.');
+            if (text.length > MAX_CHARS) {
+                displayError(`הטקסט ארוך מדי. אנא הזן/י עד ${MAX_CHARS} תווים.`);
                 return;
             }
 
@@ -288,8 +360,8 @@
             for (let i = 0; i < maxRetries; i++) {
                 try {
                     // --- לוגים לאבחון שגיאות API ---
-                    console.log(`--- TTS API Call Attempt ${i + 1} of ${maxRetries} ---`);
-                    console.log('Selected Voice:', voiceName);
+                    // console.log(`--- TTS API Call Attempt ${i + 1} of ${maxRetries} ---`);
+                    // console.log('Selected Voice:', voiceName);
 
                     const response = await fetch(apiUrl, {
                         method: 'POST',
@@ -297,7 +369,7 @@
                         body: JSON.stringify(payload)
                     });
                     
-                    console.log('API Response Status:', response.status); 
+                    // console.log('API Response Status:', response.status); 
 
                     if (!response.ok) {
                         const errorData = await response.json();
@@ -379,6 +451,7 @@
         document.addEventListener('DOMContentLoaded', () => {
             textInput.addEventListener('input', updateCharCount);
             readButton.addEventListener('click', textToSpeech);
+            fileInput.addEventListener('change', handleFileUpload); // מאזין חדש לטעינת קובץ
             updateCharCount();
         });
     </script>
