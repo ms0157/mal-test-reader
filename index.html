@@ -8,7 +8,6 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- CDN עבור mammoth.js לקריאת קבצי DOCX -->
     <script src="https://cdn.jsdelivr.net/npm/mammoth@1.6.0/mammoth.browser.min.js"></script>
-    
     <script>
         tailwind.config = {
             theme: {
@@ -56,7 +55,7 @@
         }
         /* סגנון מותאם לכפתורי רדיו */
         .form-radio:checked {
-            background-image: url("data:image/svg+xml,%3csvg viewBox='0 0 16 16' fill='white' xmlns='http://www.w3.org/2000/svg'%3e%3ccircle cx='8' cy='8' r='3'/%3e%3c/circle%3e%3c/svg%3e");
+            background-image: url("data:image/svg+xml,%3csvg viewBox='0 0 16 16' fill='white' xmlns='http://www.w3.org/2000/svg'%3e%3ccircle cx='8' cy='8' r='3'/%3e%3c/svg%3e");
             border-color: #7f5cf7;
             background-color: #7f5cf7;
         }
@@ -117,9 +116,9 @@
         <!-- קלט קובץ -->
         <div class="mt-4 mb-6">
             <label for="fileInput" class="block text-right text-gray-700 font-medium mb-2">
-                יבא/י קובץ (.docx, .txt או .pdf):
+                יבא/י קובץ (.docx או .txt):
             </label>
-            <input type="file" id="fileInput" accept=".docx, .txt, .pdf" class="w-full text-sm text-gray-500
+            <input type="file" id="fileInput" accept=".docx, .txt" class="w-full text-sm text-gray-500
                 file:mr-4 file:py-2 file:px-4
                 file:rounded-full file:border-0
                 file:text-sm file:font-semibold
@@ -193,13 +192,6 @@
     </div>
 
     <script type="module">
-        // ייבוא ספריית PDF.js
-        import * as pdfjsLib from "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.0.379/pdf.min.mjs";
-        // הגדרת Worker עבור PDF.js - נדרש לעיבוד אסינכרוני של PDF
-        const pdfWorkerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.0.379/pdf.worker.min.mjs';
-        pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorkerSrc;
-
-
         // --- פונקציות עזר להמרת PCM ל-WAV ---
         const base64ToArrayBuffer = (base64) => {
             const binaryString = atob(base64);
@@ -256,37 +248,8 @@
             }
         };
 
-        // --- פונקציה לחילוץ טקסט מקובץ PDF ---
-        async function readPdfFile(file) {
-            let fullText = '';
-            
-            try {
-                const arrayBuffer = await file.arrayBuffer();
-                const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
-                const pdf = await loadingTask.promise;
-                
-                // עובר על כל העמודים
-                for (let i = 1; i <= pdf.numPages; i++) {
-                    const page = await pdf.getPage(i);
-                    const textContent = await page.getTextContent();
-                    
-                    // חילוץ פריטי טקסט ואיחודם
-                    // מוסיפים רווח בין הפריטים כדי לאחד מילים נפרדות כראוי
-                    const pageText = textContent.items.map(item => item.str).join(' ');
-                    fullText += pageText + '\n\n';
-                    
-                    page.cleanup(); // שחרור משאבים
-                }
-            } catch (error) {
-                console.error("שגיאה בחילוץ טקסט מ-PDF:", error);
-                throw new Error('שגיאה בחילוץ טקסט מקובץ ה-PDF. ייתכן שהוא קובץ תמונה או שיש בו תקלה.');
-            }
-            
-            return fullText;
-        }
-
         // --- הגדרת משתנים וקבועים ---
-        const MAX_CHARS = 1000; // הגבלה ל-1000 תווים
+        const MAX_CHARS = 1000;
         
         // הגדרת משתני UI
         const textInput = document.getElementById('textInput');
@@ -297,7 +260,7 @@
         const buttonIcon = document.getElementById('buttonIcon');
         const charCount = document.getElementById('charCount');
         const downloadButton = document.getElementById('downloadButton');
-        const fileInput = document.getElementById('fileInput'); 
+        const fileInput = document.getElementById('fileInput'); // מזהה חדש לקלט קובץ
         
         const toggleNikkudButton = document.getElementById('toggleNikkudButton');
         const nikkudContent = document.getElementById('nikkudContent');
@@ -310,8 +273,7 @@
         };
 
         // הגדרות API
-        // *** חשוב: אם מפעילים זאת מחוץ לסביבת ה-Canvas, חובה להחליף את המחרוזת הריקה במפתח ה-API שלך! ***
-        const apiKey = "AIzaSyDhJqYtm0tkW-vy7JuTm200UpuOw3dijRg"; 
+        const apiKey = "AIzaSyDhJqYtm0tkW-vy7JuTm200UpuOw3dijRg"; // API key יינתן על ידי הסביבה
         const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=${apiKey}`;
         const maxRetries = 5;
         const initialDelay = 1000; // 1 second
@@ -320,7 +282,8 @@
         const setLoading = (isLoading) => {
             readButton.disabled = isLoading;
             textInput.disabled = isLoading;
-            fileInput.disabled = isLoading; 
+            fileInput.disabled = isLoading; // הוספת חסימה של קלט הקובץ
+            // הופך את כפתורי בחירת הקול ללא זמינים בזמן הטעינה
             document.querySelectorAll('input[name="voice"]').forEach(radio => radio.disabled = isLoading); 
 
             if (isLoading) {
@@ -335,8 +298,12 @@
                 buttonText.textContent = 'הקרא טקסט';
                 buttonIcon.classList.remove('animate-spin');
                 buttonIcon.innerHTML = `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a.5.5 0 00-.272-.34l-5.656-3.35A.5.5 0 009 5v14a.5.5 0 00.272.434l5.656-3.35a.5.5 0 00.272-.434V8.464z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5"></path>`;
+                statusMessage.classList.remove('bg-blue-100', 'text-blue-800', 'bg-red-100', 'text-red-800');
                 
-                // הסרנו את הלוגיקה הבעייתית שהסתירה את הודעת השגיאה
+                // אם אין הודעת הצלחה, נסתיר את הסטטוס
+                if (!statusMessage.classList.contains('bg-green-100')) {
+                    statusMessage.classList.add('hidden');
+                }
             }
         };
 
@@ -378,13 +345,8 @@
                 } else if (fileName.endsWith('.txt')) {
                     // קריאת קובץ TXT רגיל
                     fileContent = await file.text();
-                } else if (fileName.endsWith('.pdf')) {
-                    // קריאת PDF באמצעות pdf.js
-                    statusMessage.textContent = 'מעבד קובץ PDF... אנא המתן/י, תהליך זה יכול לקחת מספר שניות.';
-                    statusMessage.classList.remove('hidden');
-                    fileContent = await readPdfFile(file);
                 } else {
-                    throw new Error('סוג קובץ לא נתמך. אנא השתמש/י ב-.docx, .txt או .pdf');
+                    throw new Error('סוג קובץ לא נתמך. אנא השתמש/י ב-.docx או .txt');
                 }
 
                 if (fileContent.length > MAX_CHARS) {
@@ -393,7 +355,6 @@
                 } else if (fileContent.length === 0) {
                     throw new Error('הקובץ ריק או שלא ניתן היה לחלץ ממנו טקסט.');
                 } else {
-                    // הצלחה
                     statusMessage.classList.add('hidden');
                 }
 
@@ -403,9 +364,7 @@
 
             } catch (error) {
                 setLoading(false);
-                // אם השגיאה כבר הודפסה, נשתמש בהודעה הקיימת.
-                const msg = error.message || 'שגיאה לא ידועה בייבוא הקובץ.';
-                displayError(`שגיאה בייבוא הקובץ: ${msg}`);
+                displayError(`שגיאה בייבוא הקובץ: ${error.message}`);
                 textInput.value = '';
                 updateCharCount();
                 console.error("File upload error:", error);
@@ -424,14 +383,6 @@
                 displayError(`הטקסט ארוך מדי. אנא הזן/י עד ${MAX_CHARS} תווים.`);
                 return;
             }
-            
-            // בדיקה נוספת למקרה של דיפלוימנט חיצוני
-            if (!apiKey && window.location.host !== 'localhost' && !window.location.host.includes('127.0.0.1')) {
-                displayError('שגיאת הרשאה! לקבלת אודיו בדיפלוימנט חיצוני (כגון GitHub), יש להזין מפתח API תקין במקום המחרוזת הריקה בקוד.');
-                console.error("API Key is empty. You must provide a valid API key for external deployments.");
-                return;
-            }
-
 
             setLoading(true);
             audioPlayer.classList.add('hidden');
@@ -440,6 +391,7 @@
             const voiceName = getSelectedVoice();
 
             // הנחיית המודל לקרוא בטון ברור ונייטראלי (מתאים יותר לבוחן)
+            // המודל תומך בטקסט עם ניקוד ואף מעדיף אותו לדיוק
             const systemInstruction = `Read the following text in a clear, neutral and professional tone in Hebrew: ${text}`;
 
             const payload = {
@@ -460,21 +412,21 @@
 
             for (let i = 0; i < maxRetries; i++) {
                 try {
+                    // --- לוגים לאבחון שגיאות API ---
+                    // console.log(`--- TTS API Call Attempt ${i + 1} of ${maxRetries} ---`);
+                    // console.log('Selected Voice:', voiceName);
+
                     const response = await fetch(apiUrl, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify(payload)
                     });
                     
+                    // console.log('API Response Status:', response.status); 
+
                     if (!response.ok) {
                         const errorData = await response.json();
                         const errorMessage = errorData.error?.message || 'שגיאה לא ידועה בהתחברות ל-API. (ייתכן קשר למפתח או הרשאות)';
-                        
-                        // הודעת שגיאה ספציפית למפתח API חסר
-                        if (response.status === 400 && errorMessage.includes('API key')) {
-                             throw new Error('שגיאת API: מפתח API חסר או לא תקין. אנא ודא/י שהזנת מפתח API במקום המחרוזת הריקה.');
-                        }
-                        
                         throw new Error(`שגיאת HTTP: ${response.status}. הודעה: ${errorMessage}`);
                     }
 
@@ -507,9 +459,10 @@
                     // --- לוגיקת הורדה ושינוי שם הקובץ ---
                     const downloadUrl = URL.createObjectURL(wavBlob);
                     
-                    // יצירת שם קובץ דינמי
+                    // יצירת שם קובץ דינמי: קח עד 20 תווים ראשונים, החלף רווחים בקו תחתון, ונקה תווים לא חוקיים
                     let fileName = text.substring(0, 20).trim();
                     fileName = fileName.replace(/\s+/g, '_');
+                    // הסרת תווים לא חוקיים (שומר על עברית, לטינית, מספרים וקו תחתון)
                     fileName = fileName.replace(/[^a-zA-Z0-9\u0590-\u05FF_]+/g, ''); 
                     
                     if (fileName.length === 0) {
@@ -530,6 +483,7 @@
                     setLoading(false);
                     return; // הצלחה
                 } catch (error) {
+                    // נדפיס את השגיאה רק אם זה לא ניסיון אחרון כדי לא להציף את הקונסול
                     if (i === maxRetries - 1) {
                          console.error('שגיאה ב-TTS (ניסיון אחרון נכשל):', error.message);
                     }
