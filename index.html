@@ -141,8 +141,8 @@
         <!-- קלט טקסט -->
         <textarea id="textInput" rows="6" placeholder="...או הזן/י את הטקסט שלך כאן"
                   class="w-full p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-purple/50 focus:border-primary-purple text-lg"
-                  maxlength="5000"></textarea>
-        <p class="text-sm text-gray-500 mt-1 text-left" id="charCount">0/5000 תווים</p>
+                  maxlength="1000"></textarea>
+        <p class="text-sm text-gray-500 mt-1 text-left" id="charCount">0/1000 תווים</p>
 
         <!-- מדריך ניקוד מתקפל -->
         <div class="mb-2">
@@ -289,7 +289,7 @@
         }
 
         // --- הגדרת משתנים וקבועים ---
-        const MAX_CHARS = 5000; // הגדלה ל-5000 תווים
+        const MAX_CHARS = 1000; // הגדלה בחזרה ל-1000 תווים
         
         // הגדרת משתני UI
         const textInput = document.getElementById('textInput');
