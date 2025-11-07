@@ -8,7 +8,6 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- CDN עבור mammoth.js לקריאת קבצי DOCX -->
     <script src="https://cdn.jsdelivr.net/npm/mammoth@1.6.0/mammoth.browser.min.js"></script>
-    <!-- הסרת הטעינה הכפולה של pdf.min.mjs. היא נטענת כעת רק באמצעות import בבלוק הסקריפט למטה. -->
     
     <script>
         tailwind.config = {
@@ -311,7 +310,8 @@
         };
 
         // הגדרות API
-        const apiKey = "AIzaSyDhJqYtm0tkW-vy7JuTm200UpuOw3dijRg"; // API key יינתן על ידי הסביבה
+        // *** חשוב: אם מפעילים זאת מחוץ לסביבת ה-Canvas, חובה להחליף את המחרוזת הריקה במפתח ה-API שלך! ***
+        const apiKey = "AIzaSyDhJqYtm0tkW-vy7JuTm200UpuOw3dijRg"; 
         const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=${apiKey}`;
         const maxRetries = 5;
         const initialDelay = 1000; // 1 second
@@ -335,12 +335,8 @@
                 buttonText.textContent = 'הקרא טקסט';
                 buttonIcon.classList.remove('animate-spin');
                 buttonIcon.innerHTML = `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a.5.5 0 00-.272-.34l-5.656-3.35A.5.5 0 009 5v14a.5.5 0 00.272.434l5.656-3.35a.5.5 0 00.272-.434V8.464z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5"></path>`;
-                statusMessage.classList.remove('bg-blue-100', 'text-blue-800', 'bg-red-100', 'text-red-800');
                 
-                // אם אין הודעת הצלחה, נסתיר את הסטטוס
-                if (!statusMessage.classList.contains('bg-green-100')) {
-                    statusMessage.classList.add('hidden');
-                }
+                // הסרנו את הלוגיקה הבעייתית שהסתירה את הודעת השגיאה
             }
         };
 
@@ -428,6 +424,14 @@
                 displayError(`הטקסט ארוך מדי. אנא הזן/י עד ${MAX_CHARS} תווים.`);
                 return;
             }
+            
+            // בדיקה נוספת למקרה של דיפלוימנט חיצוני
+            if (!apiKey && window.location.host !== 'localhost' && !window.location.host.includes('127.0.0.1')) {
+                displayError('שגיאת הרשאה! לקבלת אודיו בדיפלוימנט חיצוני (כגון GitHub), יש להזין מפתח API תקין במקום המחרוזת הריקה בקוד.');
+                console.error("API Key is empty. You must provide a valid API key for external deployments.");
+                return;
+            }
+
 
             setLoading(true);
             audioPlayer.classList.add('hidden');
@@ -436,7 +440,6 @@
             const voiceName = getSelectedVoice();
 
             // הנחיית המודל לקרוא בטון ברור ונייטראלי (מתאים יותר לבוחן)
-            // המודל תומך בטקסט עם ניקוד ואף מעדיף אותו לדיוק
             const systemInstruction = `Read the following text in a clear, neutral and professional tone in Hebrew: ${text}`;
 
             const payload = {
@@ -457,21 +460,21 @@
 
             for (let i = 0; i < maxRetries; i++) {
                 try {
-                    // --- לוגים לאבחון שגיאות API ---
-                    // console.log(`--- TTS API Call Attempt ${i + 1} of ${maxRetries} ---`);
-                    // console.log('Selected Voice:', voiceName);
-
                     const response = await fetch(apiUrl, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify(payload)
                     });
                     
-                    // console.log('API Response Status:', response.status); 
-
                     if (!response.ok) {
                         const errorData = await response.json();
                         const errorMessage = errorData.error?.message || 'שגיאה לא ידועה בהתחברות ל-API. (ייתכן קשר למפתח או הרשאות)';
+                        
+                        // הודעת שגיאה ספציפית למפתח API חסר
+                        if (response.status === 400 && errorMessage.includes('API key')) {
+                             throw new Error('שגיאת API: מפתח API חסר או לא תקין. אנא ודא/י שהזנת מפתח API במקום המחרוזת הריקה.');
+                        }
+                        
                         throw new Error(`שגיאת HTTP: ${response.status}. הודעה: ${errorMessage}`);
                     }
 
@@ -504,10 +507,9 @@
                     // --- לוגיקת הורדה ושינוי שם הקובץ ---
                     const downloadUrl = URL.createObjectURL(wavBlob);
                     
-                    // יצירת שם קובץ דינמי: קח עד 20 תווים ראשונים, החלף רווחים בקו תחתון, ונקה תווים לא חוקיים
+                    // יצירת שם קובץ דינמי
                     let fileName = text.substring(0, 20).trim();
                     fileName = fileName.replace(/\s+/g, '_');
-                    // הסרת תווים לא חוקיים (שומר על עברית, לטינית, מספרים וקו תחתון)
                     fileName = fileName.replace(/[^a-zA-Z0-9\u0590-\u05FF_]+/g, ''); 
                     
                     if (fileName.length === 0) {
@@ -528,7 +530,6 @@
                     setLoading(false);
                     return; // הצלחה
                 } catch (error) {
-                    // נדפיס את השגיאה רק אם זה לא ניסיון אחרון כדי לא להציף את הקונסול
                     if (i === maxRetries - 1) {
                          console.error('שגיאה ב-TTS (ניסיון אחרון נכשל):', error.message);
                     }
